@@ -1,0 +1,71 @@
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(lmerTest)
+library(report)
+library(sjPlot)
+
+
+# import data from excel file (using readxl)
+# this will import what's in the first tab of your excel file, with the first row becoming the column header
+HeliData <- read_excel("~/Documents/R/Linear Regression Exploration/Heli Data Long format.xlsx")
+
+# tell R what variables are categorical
+# if you don't specify this, R will assume it's numeric
+# Below we are over-writing the current column with the new categorical column
+HeliData$Participant<-as.factor(HeliData$Participant)
+HeliData$Experience<-as.factor(HeliData$Experience)
+HeliData$DomH<-as.factor(HeliData$DomH)
+HeliData$Finger<-as.factor(HeliData$Finger)
+
+# Aggregate data (using dplyr)
+# aggregating data is useful for graphs, or for getting summary statistics for slices of data
+agg.experience <- HeliData %>%
+  group_by(Experience) %>%
+  summarise_all(mean, na.rm = TRUE)
+
+# this will just show us the object
+# you'll notice that you have N/A values in lots of places. That's because R can't average categorical variables. That's expected and not a problem.
+agg.experience
+
+# here we can remove the columns that have only N/A values
+agg.experience <- subset(agg.experience, select=-c(Participant,DomH,Finger))
+
+# note: c() creates a vector (a list)
+
+# this code will create a new object that we'll use to get the standard deviation and sample size of the different Experience conditions
+temporary.df <- HeliData %>% 
+     group_by(Experience) %>% 
+     summarize(sd=sd(Score),count=n())
+
+# here we'll merge the above dataset with our agggregated on, by the Experience variable
+agg.experience <- merge(agg.experience,temporary.df,by='Experience')
+
+# remove objects from environment. put object to remove within parentheses
+# we no longer need the temporary.df dataset now that we've merged it into the other one
+rm(temporary.df)
+
+# bar chart (using ggplot2)
+# ggplot2 is an absolute beast for data viz. You can do almost anything with it (not just bar charts)
+Exp.vs.Noob <- ggplot(data=agg.experience, aes(x=Experience, y=Score, fill=Experience))+
+  geom_bar(position="dodge", stat="identity")+
+  xlab("Experience")+ylab("Score")+
+  geom_errorbar( aes(x=Experience, ymin=Score-sd, ymax=Score+sd), width=0.4, colour="black", alpha=0.9, size=1)
+Exp.vs.Noob
+
+# regression (using lmerTest)
+# get plain language report (using report)
+# print APA table using tab_model (in sjPlot)
+all.predictors<-lmer(Score ~ Experience + DomH + Finger
+                +(1|Participant),
+                data=HeliData, REML=FALSE)
+summary(all.predictors)
+report(all.predictors)
+tab_model(all.predictors)
+
+# look for interaction effects
+# we didn't go over this yet, but the * is used to test for interactions
+all.predictors2<-lmer(Score ~ Experience*Finger + DomH
+                     +(1|Participant),
+                     data=HeliData, REML=FALSE)
+tab_model(all.predictors2)

@@ -69,3 +69,54 @@ all.predictors2<-lmer(Score ~ Experience*Finger + DomH
                      +(1|Participant),
                      data=HeliData, REML=FALSE)
 tab_model(all.predictors2)
+
+
+
+
+
+
+
+
+###############
+###############
+# Memory study regressions
+###############
+###############
+
+MemData <- read_excel("~/Downloads/study1.final1.xlsx")
+
+# lookback previous retrieval
+lookback.prev1<-lmer(ease ~ ease1ago
+                + (1|sch) + (1|par),
+                data=MemData, REML=FALSE)
+summary(lookback.prev1)
+report(lookback.prev1)
+tab_model(lookback.prev1)
+
+# lookback previous 4 retrievals
+lookback.prev4<-lmer(ease ~ ease1ago + ease2ago + ease3ago + ease4ago
+                     + (1|sch) + (1|par),
+                     data=MemData, REML=FALSE)
+summary(lookback.prev4)
+report(lookback.prev4)
+tab_model(lookback.prev4)
+
+# Retrieval number only
+retnum<-lmer(ease ~ retnum
+                + (1|sch) + (1|par),
+                data=MemData, REML=FALSE)
+summary(retnum)
+report(retnum)
+tab_model(retnum)
+
+# All predictors
+mega.ease<-lmer(ease ~ ease1ago + ease2ago + ease3ago + ri1ago + retnum
+                + sch.exprate + first.ri + jol
+                + p.acc.s1
+                + (1|sch) + (1|par),
+                data=MemData, REML=FALSE)
+summary(mega.ease)
+report(mega.ease)
+tab_model(mega.ease)
+
+
